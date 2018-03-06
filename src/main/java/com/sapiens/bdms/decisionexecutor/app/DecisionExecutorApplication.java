@@ -1,4 +1,4 @@
-package com.sapiens.bdms.decisionexecutor;
+package com.sapiens.bdms.decisionexecutor.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
