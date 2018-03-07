@@ -14,21 +14,18 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.0.0.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
+        <artifact.jar.path>${basedir}/lib/decision-exported-jar.jar</artifact.jar.path>
+        <artifact.name>decision-artifact</artifact.name>
+        <artifact.version>1.0</artifact.version>
+        <exe.helper.version>6.5</exe.helper.version>
 	</properties>
-
-    <repositories>
-        <repository>
-            <id>my-local-repo</id>
-            <url>file://${basedir}/lib</url>
-        </repository>
-    </repositories>
 
 	<dependencies>
 		<dependency>
@@ -49,29 +46,87 @@
         </dependency>
 
         <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-all</artifactId>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.8.1</version>
         </dependency>
 
         <dependency>
             <groupId>com.sapiens.bdms</groupId>
             <artifactId>bdms-java-exe-helper</artifactId>
-            <version>6.5</version>
+            <version>${exe.helper.version}</version>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>com.sapiens.bdms</groupId>
-            <artifactId>pojo</artifactId>
-            <version>1.0</version>
+            <artifactId>${artifact.name}</artifactId>
+            <version>${artifact.version}</version>
             <scope>compile</scope>
         </dependency>
-
 
     </dependencies>
 
 	<build>
 		<plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+
+                    <execution>
+                        <id>exe-helpers</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>com.sapiens.bdms</groupId>
+                            <artifactId>bdms-java-exe-helper</artifactId>
+                            <version>${exe.helper.version}</version>
+                            <packaging>jar</packaging>
+                            <file>${basedir}/lib/bdms-java-exe-helper-6.5.jar</file>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>artifact-jar</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>com.sapiens.bdms</groupId>
+                            <artifactId>${artifact.name}</artifactId>
+                            <version>${artifact.version}</version>
+                            <packaging>jar</packaging>
+                            <file>${artifact.jar.path}</file>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

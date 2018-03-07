@@ -6,8 +6,6 @@ import com.sapiens.bdms.java.exe.helper.base.FactType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,14 +32,19 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 								  String view,
 								  String version,
 								  Map<String, String> factValueByNameInputs) {
+
 		String decisionClasspath = resolveDecisionClasspath(conclusionName, view, version);
-		String decisionClassFilePath =
-				artifactsClasspathLocation + "/" + decisionClasspath.replace(".","/") + ".class";
-		File classFile = new File(decisionClassFilePath);
 
 		try {
-			Collection<String> ruleFamilyViewsToRun = Decision.getRuleFamilyViewsToRun();
-			Class clazz = Class.forName(decisionClasspath);
+			Class clazz;
+
+			try {
+				clazz = Class.forName(decisionClasspath);
+			} catch (ClassNotFoundException e) {
+				throw new ClassNotFoundException("Class for decision of conclusion \"%s\", view \"%s\" and version \"%s\" not found." +
+														 "Make sure the above is accurate and the artifact jar packaged and built correctly with this application, " +
+														 "as described in https://github.com/sapienstech/decision-executor/blob/master/README.md");
+			}
 
 			Decision decision = (Decision) clazz.newInstance();
 			Map<String, Object> factTypes = decision.getFactTypes();
