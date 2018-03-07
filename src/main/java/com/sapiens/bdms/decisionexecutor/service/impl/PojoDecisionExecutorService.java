@@ -1,6 +1,5 @@
 package com.sapiens.bdms.decisionexecutor.service.impl;
 
-import com.google.common.collect.Lists;
 import com.sapiens.bdms.decisionexecutor.service.face.DecisionExecutorService;
 import com.sapiens.bdms.java.exe.helper.base.Decision;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,49 +39,46 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 	private String datetimeFormat;
 
 	@Override
-	public String executeDecision(String conclusionName,
+	public Object executeDecision(String conclusionName,
 								  String view,
 								  String version,
-								  Map<String, String> factValueByNameInputs) {
+								  Map<String, Object> factValueByNameInputs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 
 		String decisionClasspath = resolveDecisionClasspath(conclusionName, view, version);
-
+		Class clazz;
 		try {
-			Class clazz;
-			try {
-				clazz = Class.forName(decisionClasspath);
-			} catch (ClassNotFoundException e) {
-				throw new ClassNotFoundException(String.format("Class for decision of conclusion \"%s\", view \"%s\" and version \"%s\" not found.\n" +
-																	   "Make sure the above is accurate and the artifact jar packaged and built correctly with this application, \n" +
-																	   "as described in https://github.com/sapienstech/decision-executor/blob/master/README.md",
-															   conclusionName, view, version));
-			}
-			Decision decision = (Decision) clazz.newInstance();
-
-			assertFactNames(factValueByNameInputs.keySet(), decision);
-
-			factValueByNameInputs.forEach((ftName, ftValue) -> {
-				String normalizeToFactFieldName = normalizeToFactFieldName(ftName);
-
-				Method ftGetter = Arrays.stream(clazz.getDeclaredMethods()).filter(
-						method -> method.getName().startsWith("get" + normalizeToFactFieldName)
-				).findFirst().orElseThrow(
-						() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactFieldName)
-				);
-				Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), clazz);
-
-				decision.setFactType(ftName, parsedValue);
-			});
-
-			Object result = decision.execute();
-			return String.valueOf(result);
-		} catch (Exception e) {
-			e.printStackTrace();
+			clazz = Class.forName(decisionClasspath);
+		} catch (ClassNotFoundException e) {
+			throw new ClassNotFoundException(String.format("Class for decision of conclusion \"%s\", view \"%s\" and version \"%s\" not found.\n" +
+																   "Make sure the above is accurate and the artifact jar packaged and built correctly with this application, \n" +
+																   "as described in https://github.com/sapienstech/decision-executor/blob/master/README.md",
+														   conclusionName, view, version));
 		}
-		return "";
+		Decision decision = (Decision) clazz.newInstance();
+		assertFactNames(factValueByNameInputs.keySet(), decision);
+
+		factValueByNameInputs.forEach((ftName, ftValue) -> {
+			String normalizeToFactFieldName = normalizeToFactFieldName(ftName);
+
+			Method ftGetter = Arrays.stream(clazz.getDeclaredMethods()).filter(
+					method -> method.getName().startsWith("get" + normalizeToFactFieldName)
+			).findFirst().orElseThrow(
+					() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactFieldName)
+			);
+			Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), clazz);
+
+			decision.setFactType(ftName, parsedValue);
+		});
+
+		return decision.execute();
 	}
 
-	private Object getParsedValue(String ftName, String ftValue, Class<?> returnType, Class artifactClass) {
+	@Override
+	public Object executeFlow(String flowName, String version, Map<String, Object> factValueByNameInputs) {
+		return null;
+	}
+
+	private Object getParsedValue(String ftName, Object ftValue, Class<?> returnType, Class artifactClass) {
 		if (returnType.isAssignableFrom(Collection.class)) {
 			Class<?> listMemberType = resolveListMemberType(ftName, artifactClass);
 			return getCollectionParsedValue(ftName, ftValue, listMemberType);
@@ -103,38 +99,43 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 		return addMethod.getParameterTypes()[0];
 	}
 
-	private Object parsePrimitive(String ftName, String ftValue, Class<?> returnType) {
+	private Object parsePrimitive(String ftName, Object ftValue, Class<?> returnType) {
 		if (returnType.isAssignableFrom(String.class)) {
 			return ftValue;
-		} else if (returnType.isAssignableFrom(BigDecimal.class)) {
-			return new BigDecimal(ftValue);
-		} else if (returnType.isAssignableFrom(Double.class)) {
-			return Double.parseDouble(ftValue);
-		} else if (returnType.isAssignableFrom(Integer.class)) {
-			return Integer.parseInt(ftValue);
-		} else if (returnType.isAssignableFrom(Date.class)) {
+		}
+		else if (returnType.isAssignableFrom(BigDecimal.class)) {
+			return new BigDecimal(String.valueOf(ftValue));
+		}
+		else if (returnType.isAssignableFrom(Double.class)) {
+			return Double.parseDouble(String.valueOf(ftValue));
+		}
+		else if (returnType.isAssignableFrom(Integer.class)) {
+			return Integer.parseInt(String.valueOf(ftValue));
+		}
+		else if (returnType.isAssignableFrom(Date.class)) {
+
 			SimpleDateFormat formatter = new SimpleDateFormat(datetimeFormat);
 			try {
-				return formatter.parse(ftValue);
+				return formatter.parse(String.valueOf(ftValue));
 			} catch (ParseException e) {
 				throw new RuntimeException(String.format("Could not parse given fact value \"%s\" to valid date for the Date fact \"%s\".\n" +
 																 "Make sure the value is correct and applies to the format: \"%s\"",
 														 ftValue, ftName, datetimeFormat));
 			}
 		} else if (returnType.isAssignableFrom(Boolean.class)) {
-			return Boolean.parseBoolean(ftValue);
+			return Boolean.parseBoolean(String.valueOf(ftValue));
 		}
 		throw new RuntimeException("Could not find any assignable Java object for fact \"" + ftName + "\" of type: " + returnType.getName());
 	}
 
-	private Object getCollectionParsedValue(String ftName, String ftValue, Class<?> listMemberType) {
-		List<String> values = parseToValueList(ftValue);
+	private Object getCollectionParsedValue(String ftName, Object ftValue, Class<?> listMemberType) {
+		Collection values = (Collection) ftValue;
 		List result = getMatchingListObject(ftName, listMemberType);
 
-		values.forEach(val-> {
+		values.forEach(val -> {
 			Object memberValue = parsePrimitive(ftName, val, listMemberType);
 
-			if(!memberValue.getClass().isAssignableFrom(listMemberType)){
+			if (!memberValue.getClass().isAssignableFrom(listMemberType)) {
 				throw new RuntimeException(String.format("Inconsistent types between member value type: \"%s\" to list member type \"%s\".\n" +
 																 "Given fact value: \"%s\", fact name: \"%s\".",
 														 memberValue.getClass().getName(), listMemberType.getName(), ftValue, ftName));
@@ -144,7 +145,7 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 		return result;
 	}
 
-	private List getMatchingListObject(String ftName, Class<?> listMemberType){
+	private List getMatchingListObject(String ftName, Class<?> listMemberType) {
 		if (listMemberType.isAssignableFrom(String.class)) {
 			return new ArrayList<String>();
 		} else if (listMemberType.isAssignableFrom(BigDecimal.class)) {
@@ -161,19 +162,6 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 		throw new RuntimeException("Could not find any assignable Java object for members of list fact \"" + ftName + "\" of type: " + listMemberType.getName());
 	}
 
-	private List<String> parseToValueList(String ftValue) {
-		List<String> result = Lists.newArrayList();
-		ftValue = ftValue.replaceFirst("\\[", "")
-						 .replaceFirst("\\]", "").trim();
-
-		Arrays.stream(ftValue.split(",")).forEach(val -> result.add(val.trim()));
-		return result;
-	}
-
-	@Override
-	public String executeFlow(String flowName, String version, Map<String, String> factValueByNameInputs) {
-		return null;
-	}
 
 	private String resolveDecisionClasspath(String conclusionName, String view, String version) {
 		String versionNormalized = version.replace(".", versionDotReplacement);

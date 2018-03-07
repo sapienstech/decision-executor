@@ -23,20 +23,29 @@ public class DecisionExecutorRestController {
 	private DecisionExecutorService pojoDecisionExecutorService;
 
 	@RequestMapping(value = "/execute/decision/{conclusionName}/{view}/{version}", method = POST)
-	public String executeDecision(@PathVariable String conclusionName,
+	public Object executeDecision(@PathVariable String conclusionName,
 								  @PathVariable String view,
 								  @PathVariable String version,
-								  @RequestBody Map<String, String> factValueByNameInputs){
-
-		return pojoDecisionExecutorService.executeDecision(conclusionName, view, version, factValueByNameInputs);
+								  @RequestBody Map<String, Object> factValueByNameInputs){
+		try {
+			return pojoDecisionExecutorService.executeDecision(conclusionName, view, version, factValueByNameInputs);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Error: "+e.getMessage();
+		}
 	}
 
 	@RequestMapping(value = "/execute/decision/{flowName}/{version}", method = POST)
-	public String executeFlow(@PathVariable String flowName,
+	public Object executeFlow(@PathVariable String flowName,
 							  @PathVariable String version,
-							  @RequestBody Map<String, String> factValueByNameInputs){
+							  @RequestBody Map<String, Object> factValueByNameInputs){
 
-		return pojoDecisionExecutorService.executeFlow(flowName, version, factValueByNameInputs);
+		try {
+			return pojoDecisionExecutorService.executeFlow(flowName, version, factValueByNameInputs);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Error: "+e.getMessage();
+		}
 	}
 
 	@RequestMapping("/rest/test")
