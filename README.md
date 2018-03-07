@@ -33,6 +33,9 @@ e.g:<br>
 {<br>
     "Fact A Name": "val1",<br>
     "Fact B Name": "val2"<br>
-}**
+    "List Fact C Name": ["val1","val2","val3"]<br>
+    "Date Fact B Name": "01/28/2018 15:23:23"<br>
+}**<br>
+Note: The format for date values **must be** MM/dd/yyyy HH:mm:ss
 - In the same way POST call to **http://localhost:8080/execute/decision/{flowName}/{version}**
 
