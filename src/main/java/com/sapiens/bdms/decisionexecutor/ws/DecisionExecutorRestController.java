@@ -1,5 +1,6 @@
 package com.sapiens.bdms.decisionexecutor.ws;
 
+import com.google.common.collect.Lists;
 import com.sapiens.bdms.decisionexecutor.service.face.DecisionExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,12 +52,17 @@ public class DecisionExecutorRestController {
 	}
 
 	@RequestMapping("/rest/test")
-	public Map<String, String> restTest(){
+	public Map<String, Object> restTest(){
 		logger.info("in restTest");
 
-		HashMap<String, String> map = new HashMap<>();
-		map.put("key1", "val1");
-		map.put("key2", "val2");
+		HashMap<String, Object> map = new HashMap<>();
+		map.put("string", "val1");
+		map.put("int", 1);
+		map.put("dbl", new Double("7.7"));
+		map.put("date", new Date());
+		map.put("int list", Lists.newArrayList(1, 2, 3));
+		map.put("string list", Lists.newArrayList("1", "2", "3"));
+		map.put("bd", new BigDecimal("5.333"));
 		return map;
 	}
 }

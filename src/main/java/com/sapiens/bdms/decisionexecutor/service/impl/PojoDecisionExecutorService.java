@@ -58,16 +58,17 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 		assertFactNames(factValueByNameInputs.keySet(), decision);
 
 		factValueByNameInputs.forEach((ftName, ftValue) -> {
-			String normalizeToFactFieldName = normalizeToFactFieldName(ftName);
+			String normalizeToFactNameInMethod = normalizeToCamelCase(ftName, true);
 
 			Method ftGetter = Arrays.stream(clazz.getDeclaredMethods()).filter(
-					method -> method.getName().startsWith("get" + normalizeToFactFieldName)
+					method -> method.getName().startsWith("get" + normalizeToFactNameInMethod)
 			).findFirst().orElseThrow(
-					() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactFieldName)
+					() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactNameInMethod)
 			);
 			Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), clazz);
 
-			decision.setFactType(ftName, parsedValue);
+			String normalizeToFactFieldName = normalizeToCamelCase(ftName, false);
+			decision.setFactType(normalizeToFactFieldName, parsedValue);
 		});
 
 		return decision.execute();
@@ -79,7 +80,7 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 	}
 
 	private Object getParsedValue(String ftName, Object ftValue, Class<?> returnType, Class artifactClass) {
-		if (returnType.isAssignableFrom(Collection.class)) {
+		if (Collection.class.isAssignableFrom(returnType)) {
 			Class<?> listMemberType = resolveListMemberType(ftName, artifactClass);
 			return getCollectionParsedValue(ftName, ftValue, listMemberType);
 		}
@@ -87,13 +88,13 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 	}
 
 	private Class<?> resolveListMemberType(String ftName, Class artifactClass) {
-		String normalizeToFactFieldName = normalizeToFactFieldName(ftName);
+		String normalizeToFactNameInMethod = normalizeToCamelCase(ftName, true);
 
 		Method addMethod = Arrays.stream(artifactClass.getDeclaredMethods()).filter(
-				method -> method.getName().startsWith("add" + normalizeToFactFieldName) &&
+				method -> method.getName().startsWith("add" + normalizeToFactNameInMethod) &&
 						method.getParameterCount() == 1
 		).findFirst().orElseThrow(
-				() -> new RuntimeException("Could not find add method method for fact field name " + normalizeToFactFieldName)
+				() -> new RuntimeException("Could not find add method method for fact field name " + normalizeToFactNameInMethod)
 		);
 
 		return addMethod.getParameterTypes()[0];
@@ -174,7 +175,7 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 
 		for (String givenFactName : givenFactNames) {
 
-			String normalized = normalizeToFactFieldName(givenFactName);
+			String normalized = normalizeToCamelCase(givenFactName, true);
 			if (!actualNames.contains(normalized)) {
 				throw new RuntimeException(String.format("Given Fact Type name \"%s\" was not found on the requested decision to execute \"%s\".\n" +
 																 "The available fact types to set are: \"%s\".",
@@ -183,14 +184,14 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 		}
 	}
 
-	private String normalizeToFactFieldName(String factName) {
+	private String normalizeToCamelCase(String factName, boolean isFirstAsCapital) {
 		String[] spaceDelimited = factName.split(" ");
 		StringBuilder result = new StringBuilder();
 
 		for (String word : spaceDelimited) {
 			String firstLetter = word.substring(0, 1);
-			String firstLetterAsCapital = firstLetter.toUpperCase();
-			String capitalized = word.replaceFirst(firstLetter, firstLetterAsCapital);
+			String firstLetterCorrectedCase = isFirstAsCapital ? firstLetter.toUpperCase() : firstLetter.toLowerCase();
+			String capitalized = word.replaceFirst(firstLetter, firstLetterCorrectedCase);
 			result.append(capitalized);
 		}
 		return result.toString();
