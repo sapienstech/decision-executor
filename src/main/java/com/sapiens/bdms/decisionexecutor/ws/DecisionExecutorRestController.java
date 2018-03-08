@@ -1,7 +1,8 @@
 package com.sapiens.bdms.decisionexecutor.ws;
 
 import com.google.common.collect.Lists;
-import com.sapiens.bdms.decisionexecutor.service.face.DecisionExecutorService;
+import com.google.common.collect.Maps;
+import com.sapiens.bdms.decisionexecutor.service.face.ArtifactExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +24,7 @@ public class DecisionExecutorRestController {
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Resource
-	private DecisionExecutorService pojoDecisionExecutorService;
+	private ArtifactExecutorService pojoArtifactExecutorService;
 
 	@RequestMapping(value = "/execute/decision/{conclusionName}/{view}/{version}", method = POST)
 	public Object executeDecision(@PathVariable String conclusionName,
@@ -31,23 +32,25 @@ public class DecisionExecutorRestController {
 								  @PathVariable String version,
 								  @RequestBody Map<String, Object> factValueByNameInputs){
 		try {
-			return pojoDecisionExecutorService.executeDecision(conclusionName, view, version, factValueByNameInputs);
+			return pojoArtifactExecutorService.executeDecision(conclusionName, view, version, factValueByNameInputs);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return "Error: "+e.getMessage();
 		}
 	}
 
-	@RequestMapping(value = "/execute/decision/{flowName}/{version}", method = POST)
-	public Object executeFlow(@PathVariable String flowName,
+	@RequestMapping(value = "/execute/flow/{flowName}/{version}", method = POST)
+	public Map<String, Object> executeFlow(@PathVariable String flowName,
 							  @PathVariable String version,
 							  @RequestBody Map<String, Object> factValueByNameInputs){
 
 		try {
-			return pojoDecisionExecutorService.executeFlow(flowName, version, factValueByNameInputs);
+			return pojoArtifactExecutorService.executeFlow(flowName, version, factValueByNameInputs);
 		} catch (Exception e) {
-			e.printStackTrace();
-			return "Error: "+e.getMessage();
+			logger.error(e.getMessage(), e);
+			Map<String, Object> error = Maps.newHashMap();
+			error.put("Error", e.getMessage());
+			return error;
 		}
 	}
 

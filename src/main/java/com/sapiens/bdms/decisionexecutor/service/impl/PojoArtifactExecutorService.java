@@ -1,7 +1,11 @@
 package com.sapiens.bdms.decisionexecutor.service.impl;
 
-import com.sapiens.bdms.decisionexecutor.service.face.DecisionExecutorService;
+import com.sapiens.bdms.decisionexecutor.service.face.ArtifactExecutorService;
 import com.sapiens.bdms.java.exe.helper.base.Decision;
+import com.sapiens.bdms.java.exe.helper.base.Flow;
+import com.sapiens.bdms.java.exe.helper.base.Group;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +22,9 @@ import java.util.Map;
 import java.util.Set;
 
 @Service
-public class PojoDecisionExecutorService implements DecisionExecutorService {
+public class PojoArtifactExecutorService implements ArtifactExecutorService {
+
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Value("${artifacts.classpath.location}")
 	private String artifactsClasspathLocation;
@@ -34,6 +40,9 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 
 	@Value("${decision.classpath.format}")
 	private String decisionClasspathFormat;
+
+	@Value("${flow.classpath.format}")
+	private String flowClasspathFormat;
 
 	@Value("${date.fact.input.value.datetime.format}")
 	private String datetimeFormat;
@@ -55,28 +64,48 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 														   conclusionName, view, version));
 		}
 		Decision decision = (Decision) clazz.newInstance();
-		assertFactNames(factValueByNameInputs.keySet(), decision);
-
-		factValueByNameInputs.forEach((ftName, ftValue) -> {
-			String normalizeToFactNameInMethod = normalizeToCamelCase(ftName, true);
-
-			Method ftGetter = Arrays.stream(clazz.getDeclaredMethods()).filter(
-					method -> method.getName().startsWith("get" + normalizeToFactNameInMethod)
-			).findFirst().orElseThrow(
-					() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactNameInMethod)
-			);
-			Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), clazz);
-
-			String normalizeToFactFieldName = normalizeToCamelCase(ftName, false);
-			decision.setFactType(normalizeToFactFieldName, parsedValue);
-		});
+		setFactInputs(factValueByNameInputs, clazz, decision, decision.getName());
 
 		return decision.execute();
 	}
 
 	@Override
-	public Object executeFlow(String flowName, String version, Map<String, Object> factValueByNameInputs) {
-		return null;
+	public Map<String, Object> executeFlow(String flowName, String version, Map<String, Object> factValueByNameInputs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		String flowClasspath = resolveFlowClasspath(flowName, version);
+		Class clazz;
+		try {
+			clazz = Class.forName(flowClasspath);
+		} catch (ClassNotFoundException e) {
+			throw new ClassNotFoundException(String.format("Class for flow \"%s\" and version \"%s\" not found.\n" +
+																   "Make sure the above is accurate and the artifact jar packaged and built correctly with this application, \n" +
+																   "as described in https://github.com/sapienstech/decision-executor/blob/master/README.md",
+														   flowName, version));
+		}
+		Flow flow = (Flow) clazz.newInstance();
+		setFactInputs(factValueByNameInputs, clazz, flow, flow.getName());
+
+		return flow.execute();
+	}
+
+	private void setFactInputs(Map<String, Object> factValueByNameInputs,
+							   Class artifactClass,
+							   Group artifactInstance,
+							   String artifactName) {
+		assertFactNames(factValueByNameInputs.keySet(), artifactInstance, artifactName);
+
+		factValueByNameInputs.forEach((ftName, ftValue) -> {
+			String normalizeToFactNameInMethod = normalizeToCamelCase(ftName, true);
+
+			Method ftGetter = Arrays.stream(artifactClass.getDeclaredMethods()).filter(
+					method -> method.getName().startsWith("get" + normalizeToFactNameInMethod)
+			).findFirst().orElseThrow(
+					() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactNameInMethod)
+			);
+			Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), artifactClass);
+
+			String normalizeToFactFieldName = normalizeToCamelCase(ftName, false);
+			artifactInstance.setFactType(normalizeToFactFieldName, parsedValue);
+		});
 	}
 
 	private Object getParsedValue(String ftName, Object ftValue, Class<?> returnType, Class artifactClass) {
@@ -163,37 +192,49 @@ public class PojoDecisionExecutorService implements DecisionExecutorService {
 		throw new RuntimeException("Could not find any assignable Java object for members of list fact \"" + ftName + "\" of type: " + listMemberType.getName());
 	}
 
-
 	private String resolveDecisionClasspath(String conclusionName, String view, String version) {
 		String versionNormalized = version.replace(".", versionDotReplacement);
 		return decisionClasspathFormat.replace(formatViewPlaceholder, view)
 									  .replace(formatVersionPlaceholder, versionNormalized) + "." + conclusionName;
 	}
 
-	private void assertFactNames(Set<String> givenFactNames, Decision decision) {
-		Set<String> actualNames = decision.getFactTypes().keySet();
+	private String resolveFlowClasspath(String flowName, String version) {
+		String versionNormalized = version.replace(".", versionDotReplacement);
+		return flowClasspathFormat.replace(formatVersionPlaceholder, versionNormalized) + "." + flowName;
+	}
+
+	private void assertFactNames(Set<String> givenFactNames, Group artifactInstance, String artifactName) {
+		Set<String> actualNames = artifactInstance.getFactTypes().keySet();
 
 		for (String givenFactName : givenFactNames) {
 
 			String normalized = normalizeToCamelCase(givenFactName, true);
 			if (!actualNames.contains(normalized)) {
-				throw new RuntimeException(String.format("Given Fact Type name \"%s\" was not found on the requested decision to execute \"%s\".\n" +
+				throw new RuntimeException(String.format("Given Fact Type name \"%s\" was not found on the requested artifact to execute \"%s\".\n" +
 																 "The available fact types to set are: \"%s\".",
-														 normalized, decision.getName(), actualNames.toString()));
+														 normalized, artifactName, actualNames.toString()));
 			}
 		}
 	}
 
 	private String normalizeToCamelCase(String factName, boolean isFirstAsCapital) {
 		String[] spaceDelimited = factName.split(" ");
-		StringBuilder result = new StringBuilder();
+		StringBuilder builder = new StringBuilder();
 
+		// first normalize and set all as upper camel case
 		for (String word : spaceDelimited) {
-			String firstLetter = word.substring(0, 1);
-			String firstLetterCorrectedCase = isFirstAsCapital ? firstLetter.toUpperCase() : firstLetter.toLowerCase();
-			String capitalized = word.replaceFirst(firstLetter, firstLetterCorrectedCase);
-			result.append(capitalized);
+			word = word.replaceAll("[^a-zA-Z0-9]", ""); //removes any non alphanumeric char
+			String capitalized = setFirstLetterCase(word, true);
+			builder.append(capitalized);
 		}
-		return result.toString();
+		// than set entire name's first letter as upper or lower as requested
+		return setFirstLetterCase(builder.toString(), isFirstAsCapital);
+	}
+
+	private String setFirstLetterCase(String factName, boolean isFirstAsCapital) {
+		String firstLetter = factName.substring(0, 1);
+		String firstLetterCorrectedCase = isFirstAsCapital ? firstLetter.toUpperCase() : firstLetter.toLowerCase();
+		factName = factName.replaceFirst(firstLetter, firstLetterCorrectedCase);
+		return factName;
 	}
 }
