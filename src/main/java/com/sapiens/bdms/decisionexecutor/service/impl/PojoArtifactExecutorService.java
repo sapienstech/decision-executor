@@ -1,5 +1,6 @@
 package com.sapiens.bdms.decisionexecutor.service.impl;
 
+import com.google.common.collect.Maps;
 import com.sapiens.bdms.decisionexecutor.service.face.ArtifactExecutorService;
 import com.sapiens.bdms.java.exe.helper.base.Decision;
 import com.sapiens.bdms.java.exe.helper.base.Flow;
@@ -92,6 +93,7 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 							   Group artifactInstance,
 							   String artifactName) {
 		assertFactNames(factValueByNameInputs.keySet(), artifactInstance, artifactName);
+		Map<String, Object> parsedInputsByFactToSet = Maps.newHashMap();
 
 		factValueByNameInputs.forEach((ftName, ftValue) -> {
 			String normalizeToFactNameInMethod = normalizeToCamelCase(ftName, true);
@@ -104,8 +106,10 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 			Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), artifactClass);
 
 			String normalizeToFactFieldName = normalizeToCamelCase(ftName, false);
-			artifactInstance.setFactType(normalizeToFactFieldName, parsedValue);
+			parsedInputsByFactToSet.put(normalizeToFactFieldName, parsedValue);
 		});
+
+		artifactInstance.setFactTypes(parsedInputsByFactToSet);
 	}
 
 	private Object getParsedValue(String ftName, Object ftValue, Class<?> returnType, Class artifactClass) {
