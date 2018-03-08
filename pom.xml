@@ -21,9 +21,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
-        <artifact.jar.path>${basedir}/lib/decision-exported-jar.jar</artifact.jar.path>
-        <artifact.name>decision-artifact</artifact.name>
-        <artifact.version>1.0</artifact.version>
         <exe.helper.version>6.5</exe.helper.version>
 	</properties>
 
@@ -76,13 +73,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.sapiens.bdms</groupId>
-            <artifactId>${artifact.name}</artifactId>
-            <version>${artifact.version}</version>
-            <scope>compile</scope>
-        </dependency>
-
     </dependencies>
 
 	<build>
@@ -106,21 +96,6 @@
                             <version>${exe.helper.version}</version>
                             <packaging>jar</packaging>
                             <file>${basedir}/lib/bdms-java-exe-helper-6.5.jar</file>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>artifact-jar</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                        <configuration>
-                            <groupId>com.sapiens.bdms</groupId>
-                            <artifactId>${artifact.name}</artifactId>
-                            <version>${artifact.version}</version>
-                            <packaging>jar</packaging>
-                            <file>${artifact.jar.path}</file>
                         </configuration>
                     </execution>
 

@@ -1,7 +1,9 @@
 package com.sapiens.bdms.decisionexecutor.service.impl;
 
 import com.google.common.collect.Maps;
+import com.sapiens.bdms.decisionexecutor.exception.MissingFileException;
 import com.sapiens.bdms.decisionexecutor.service.face.ArtifactExecutorService;
+import com.sapiens.bdms.decisionexecutor.service.face.ArtifactsJarLoader;
 import com.sapiens.bdms.java.exe.helper.base.Decision;
 import com.sapiens.bdms.java.exe.helper.base.Flow;
 import com.sapiens.bdms.java.exe.helper.base.Group;
@@ -10,8 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -22,13 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.sapiens.bdms.decisionexecutor.GeneralConstants.README_URL;
+
 @Service
 public class PojoArtifactExecutorService implements ArtifactExecutorService {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-	@Value("${artifacts.classpath.location}")
-	private String artifactsClasspathLocation;
 
 	@Value("${format.view.placeholder}")
 	private String formatViewPlaceholder;
@@ -48,21 +51,27 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 	@Value("${date.fact.input.value.datetime.format}")
 	private String datetimeFormat;
 
+	@Value("${default.artifacts.jar.location}")
+	private String defaultArtifactsJarLocation;
+
+	@Resource
+	private ArtifactsJarLoader pojoArtifactsJarLoader;
+
 	@Override
 	public Object executeDecision(String conclusionName,
 								  String view,
 								  String version,
 								  Map<String, Object> factValueByNameInputs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-
+		refreshClassLoaders();
 		String decisionClasspath = resolveDecisionClasspath(conclusionName, view, version);
 		Class clazz;
 		try {
-			clazz = Class.forName(decisionClasspath);
+			clazz = pojoArtifactsJarLoader.getArtifactClass(decisionClasspath);
 		} catch (ClassNotFoundException e) {
 			throw new ClassNotFoundException(String.format("Class for decision of conclusion \"%s\", view \"%s\" and version \"%s\" not found.\n" +
-																   "Make sure the above is accurate and the artifact jar packaged and built correctly with this application, \n" +
-																   "as described in https://github.com/sapienstech/decision-executor/blob/master/README.md",
-														   conclusionName, view, version));
+																   "Make sure the above is accurate and the artifact jar/s located in the configured artifacts jar location (%s by default), \n" +
+																   "as described in %s",
+														   conclusionName, view, version, getDefaultArtifactsJarLocation(), README_URL));
 		}
 		Decision decision = (Decision) clazz.newInstance();
 		setFactInputs(factValueByNameInputs, clazz, decision, decision.getName());
@@ -72,20 +81,38 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 
 	@Override
 	public Map<String, Object> executeFlow(String flowName, String version, Map<String, Object> factValueByNameInputs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+		refreshClassLoaders();
 		String flowClasspath = resolveFlowClasspath(flowName, version);
 		Class clazz;
 		try {
-			clazz = Class.forName(flowClasspath);
+			clazz = pojoArtifactsJarLoader.getArtifactClass(flowClasspath);
 		} catch (ClassNotFoundException e) {
 			throw new ClassNotFoundException(String.format("Class for flow \"%s\" and version \"%s\" not found.\n" +
-																   "Make sure the above is accurate and the artifact jar packaged and built correctly with this application, \n" +
-																   "as described in https://github.com/sapienstech/decision-executor/blob/master/README.md",
-														   flowName, version));
+																   "Make sure the above is accurate and the artifact jar/s located in the configured artifacts jar location (%s by default), \n" +
+																   "as described in %s",
+														   flowName, version, getDefaultArtifactsJarLocation(), README_URL));
 		}
 		Flow flow = (Flow) clazz.newInstance();
 		setFactInputs(factValueByNameInputs, clazz, flow, flow.getName());
 
 		return flow.execute();
+	}
+
+	private void refreshClassLoaders(){
+		try {
+			pojoArtifactsJarLoader.loadArtifactJarsFromDefaultLocation(false);
+		} catch (MissingFileException e) {
+			if(pojoArtifactsJarLoader.isClassLoadersEmpty()){
+				throw new RuntimeException("Unable to execute any artifact - default artifacts jar location " +
+												   "\""+ getDefaultArtifactsJarLocation() +"\" is missing " +
+												   "or empty and application was not manually loaded with any other jar location. " +
+												   "Add the artifacts jar/s to the above location or call \"reload/artifacts/jars/from/{path}\" for a different path.");
+			}
+		}
+	}
+
+	private String getDefaultArtifactsJarLocation() {
+		return Paths.get(defaultArtifactsJarLocation).toAbsolutePath().toString();
 	}
 
 	private void setFactInputs(Map<String, Object> factValueByNameInputs,
