@@ -36,7 +36,7 @@ public class DecisionExecutorRestController {
 	@Resource
 	private ArtifactsJarLoader pojoArtifactsJarLoader;
 
-	@Value("${default.artifacts.jar.location}")
+	@Value("${artifacts.jar.location}")
 	private String defaultArtifactsJarLocation;
 
 	@RequestMapping(value = "/execute/decision/{conclusionName}/{view}/{version}", method = POST)

@@ -51,7 +51,7 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 	@Value("${date.fact.input.value.datetime.format}")
 	private String datetimeFormat;
 
-	@Value("${default.artifacts.jar.location}")
+	@Value("${artifacts.jar.location}")
 	private String defaultArtifactsJarLocation;
 
 	@Resource

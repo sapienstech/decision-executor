@@ -24,7 +24,7 @@ public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	@Value("${default.artifacts.jar.location}")
+	@Value("${artifacts.jar.location}")
 	private String defaultArtifactsJarLocation;
 
 	@Override
