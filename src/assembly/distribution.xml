@@ -22,4 +22,10 @@
             </includes>
         </fileSet>
 	</fileSets>
+    <files>
+        <file>
+            <outputDirectory>/</outputDirectory>
+            <source>${basedir}/README.md</source>
+        </file>
+    </files>
 </assembly>
