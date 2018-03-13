@@ -45,14 +45,11 @@
 
 ### Java ###
 **/*.class
-**/target/*.*
-**/target
 
 # Mobile Tools for Java (J2ME)
 **/.mtj.tmp/
 
 # Package Files #
-**/*.jar
 **/*.war
 **/*.ear
 
@@ -135,9 +132,6 @@
 
 # PDT-specific (PHP Development Tools)
 **/.buildpath
-
-# sbteclipse plugin
-**/.target
 
 # Tern plugin
 **/.tern-project

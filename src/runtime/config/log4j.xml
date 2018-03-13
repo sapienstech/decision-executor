@@ -52,13 +52,6 @@
         <appender-ref ref="async_file"/>
     </logger>
 
-    <logger name="com.sapiens.bdms.views" additivity="false">
-        <level value="DEBUG"/>
-        <appender-ref ref="console"/>
-        <appender-ref ref="async_file"/>
-        <appender-ref ref="execution"/>
-    </logger>
-
     <logger name="flow.execution" additivity="false">
         <level value="DEBUG"/>
         <appender-ref ref="console"/>

@@ -68,17 +68,6 @@ public class DecisionExecutorRestController {
 		}
 	}
 
-	private Map<String, Object> normalizeFlowResult(Map<String, Object> flowResult) {
-		Map<String, Object> result = Maps.newHashMap();
-
-		flowResult.forEach((key, val) -> {
-			FlowExecutionFactResultDto dto = new FlowExecutionFactResultDto((FactType) val);
-			result.put(key, dto);
-		});
-
-		return result;
-	}
-
 	@RequestMapping(value = "reload/artifacts/jars/from/{path}", method = GET)
 	public String reloadArtifactsJarsFrom(@PathVariable String path, @RequestParam boolean forceReload) {
 		try {
@@ -91,7 +80,7 @@ public class DecisionExecutorRestController {
 	}
 
 	@RequestMapping(value = "reload/artifacts/jars/from/default/path", method = GET)
-	public String reloadArtifactsJarsFrom(@RequestParam boolean forceReload) {
+	public String reloadArtifactsJarsFromDefaultPath(@RequestParam boolean forceReload) {
 		try {
 			int loaded = pojoArtifactsJarLoader.loadArtifactJarsFromDefaultLocation(forceReload);
 			return "Loaded " + loaded + " artifacts from default path (\"" + Paths.get(defaultArtifactsJarLocation).toAbsolutePath().toString() + "\")";
@@ -115,4 +104,16 @@ public class DecisionExecutorRestController {
 		map.put("bd", new BigDecimal("5.333"));
 		return map;
 	}
+
+	private Map<String, Object> normalizeFlowResult(Map<String, Object> flowResult) {
+		Map<String, Object> result = Maps.newHashMap();
+
+		flowResult.forEach((key, val) -> {
+			FlowExecutionFactResultDto dto = new FlowExecutionFactResultDto((FactType) val);
+			result.put(key, dto);
+		});
+
+		return result;
+	}
+
 }
