@@ -39,26 +39,28 @@ public class DecisionExecutorRestController {
 	@Value("${artifacts.jar.location}")
 	private String defaultArtifactsJarLocation;
 
-	@RequestMapping(value = "/execute/decision/{conclusionName}/{view}/{version}", method = POST)
+	@RequestMapping(value = "/execute/decision/{packagePrefix}/{conclusionName}/{view}/{version}", method = POST)
 	public Object executeDecision(@PathVariable String conclusionName,
+								  @PathVariable String packagePrefix,
 								  @PathVariable String view,
 								  @PathVariable String version,
 								  @RequestBody Map<String, Object> factValueByNameInputs) {
 		try {
-			return pojoArtifactExecutorService.executeDecision(conclusionName, view, version, factValueByNameInputs);
+			return pojoArtifactExecutorService.executeDecision(packagePrefix, conclusionName, view, version, factValueByNameInputs);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			return "Error: " + e.getMessage();
 		}
 	}
 
-	@RequestMapping(value = "/execute/flow/{flowName}/{version}", method = POST)
+	@RequestMapping(value = "/execute/flow/{packagePrefix}/{flowName}/{version}", method = POST)
 	public Map<String, Object> executeFlow(@PathVariable String flowName,
+										   @PathVariable String packagePrefix,
 										   @PathVariable String version,
 										   @RequestBody Map<String, Object> factValueByNameInputs) {
 
 		try {
-			Map<String, Object> result = pojoArtifactExecutorService.executeFlow(flowName, version, factValueByNameInputs);
+			Map<String, Object> result = pojoArtifactExecutorService.executeFlow(packagePrefix, flowName, version, factValueByNameInputs);
 			return normalizeFlowResult(result);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);

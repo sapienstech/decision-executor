@@ -31,6 +31,16 @@ To have minimal execution logging set it to DEBUG.
 2.1. **artifacts.jar.location** - The main location from which the application loads and re-loads the decisions/flows artifacts jars. The default is \<release folder full path\>/lib.<br>
 2.2. **date.fact.input.value.datetime.format** - The format in which the application expects the date input fact values to be sent.
 
+<u>**Artifacts Requirement**</u>
+Artifact jars placed in the "artifacts.jar.location" (see above) must be such that were generated using DECISION DM Java Adapter with its default properties setting.<br>
+More specifically, the below adapter properties must stay with their default value:
+- **Decision Input Bean Generator** - must stay "noInputBeanGenerator"
+- **Include Decision in Generated Package** - must stay "No"
+- **Include Release Name in Generated Package** - must stay "No"
+- **Include Tag Name in Generated Package** - must stay "No"
+- **Generated JARs** - must be either "Each decision in separate jar" or "All decisions in one jar"
+- **Java Compilation Version** - must stay "1.8"
+
 <u>**Start the application**</u>
 
 The application has a built in Tomcat servlet that will listen to port 8080.<br>
@@ -40,12 +50,13 @@ Run the application in command line from where you extracted the release with th
 <br><br>
 e.g: java -Dlog4j.configuration="file://user/home/Decision Executor/config/log4j.xml" -jar decision-executor-1.0.0.jar
 
-<u>**Usage**</u><br><br>
+<u>**Usage**</u>
 1. Execution: The decision and/or flow artifacts wrapped in the input jar/s can be executed with this app REST API by calling:<br><br>
-1.1. POST call to **http://localhost:8080/execute/decision/{conclusionName}/{view}/{version}** <br>
+1.1. POST call to **http://localhost:8080/execute/decision/{packagePrefix}/{conclusionName}/{view}/{version}** <br>
 along with a JSON map of the persistent fact values by fact names as the request body.<br><br>
+Note - **{packagePrefix}** is the value set to the property "Generated Package Prefix" in the DM Java Adapter with which the artifact's jar was exported
 e.g:<br>
-**http://localhost:8080/execute/decision/CustomerTurnoverAmount/Base/1.0<br>
+**http://localhost:8080/execute/decision/com.sapiens/CustomerTurnoverAmount/Base/1.0<br>
 {<br>
     "Fact A Name": "val1",<br>
     "Fact B Name": "val2"<br>
@@ -53,7 +64,7 @@ e.g:<br>
     "Date Fact B Name": "01/28/2018 15:23:23"<br>
 }**<br><br>
 Note: The format for the date values **must be** according to what was set in the "date.fact.input.value.datetime.format" property (default is MM/dd/yyyy HH:mm:ss)<br><br>
-1.2. In the same way POST call to **http://localhost:8080/execute/flow/{flowName}/{version}**
+1.2. In the same way POST call to **http://localhost:8080/execute/flow/{packagePrefix}/{flowName}/{version}**
 
 2. Artifacts loading:<br><br>
 2.1. GET call to **http://localhost:8080/reload/artifacts/jars/from/default/path?forceReload=?** with the "forceReload" query parameter<br>

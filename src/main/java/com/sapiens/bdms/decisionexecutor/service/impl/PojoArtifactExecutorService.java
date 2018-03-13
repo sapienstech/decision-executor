@@ -39,6 +39,9 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 	@Value("${format.version.placeholder}")
 	private String formatVersionPlaceholder;
 
+	@Value("${format.prefix.placeholder}")
+	private String formatPrefixPlaceholder;
+
 	@Value("${version.dot.replacement}")
 	private String versionDotReplacement;
 
@@ -58,12 +61,13 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 	private ArtifactsJarLoader pojoArtifactsJarLoader;
 
 	@Override
-	public Object executeDecision(String conclusionName,
+	public Object executeDecision(String packagePrefix,
+								  String conclusionName,
 								  String view,
 								  String version,
 								  Map<String, Object> factValueByNameInputs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		refreshClassLoaders();
-		String decisionClasspath = resolveDecisionClasspath(conclusionName, view, version);
+		String decisionClasspath = resolveDecisionClasspath(packagePrefix, conclusionName, view, version);
 		Class clazz;
 		try {
 			clazz = pojoArtifactsJarLoader.getArtifactClass(decisionClasspath);
@@ -80,9 +84,10 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 	}
 
 	@Override
-	public Map<String, Object> executeFlow(String flowName, String version, Map<String, Object> factValueByNameInputs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+	public Map<String, Object> executeFlow(String packagePrefix, String flowName, String version,
+										   Map<String, Object> factValueByNameInputs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 		refreshClassLoaders();
-		String flowClasspath = resolveFlowClasspath(flowName, version);
+		String flowClasspath = resolveFlowClasspath(packagePrefix, flowName, version);
 		Class clazz;
 		try {
 			clazz = pojoArtifactsJarLoader.getArtifactClass(flowClasspath);
@@ -223,15 +228,17 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 		throw new RuntimeException("Could not find any assignable Java object for members of list fact \"" + ftName + "\" of type: " + listMemberType.getName());
 	}
 
-	private String resolveDecisionClasspath(String conclusionName, String view, String version) {
+	private String resolveDecisionClasspath(String packagePrefix, String conclusionName, String view, String version) {
 		String versionNormalized = version.replace(".", versionDotReplacement);
 		return decisionClasspathFormat.replace(formatViewPlaceholder, view)
+									  .replace(formatPrefixPlaceholder, packagePrefix)
 									  .replace(formatVersionPlaceholder, versionNormalized) + "." + conclusionName;
 	}
 
-	private String resolveFlowClasspath(String flowName, String version) {
+	private String resolveFlowClasspath(String packagePrefix, String flowName, String version) {
 		String versionNormalized = version.replace(".", versionDotReplacement);
-		return flowClasspathFormat.replace(formatVersionPlaceholder, versionNormalized) + "." + flowName;
+		return flowClasspathFormat.replace(formatPrefixPlaceholder, packagePrefix)
+								  .replace(formatVersionPlaceholder, versionNormalized) + "." + flowName;
 	}
 
 	private void assertFactNames(Set<String> givenFactNames, Group artifactInstance, String artifactName) {
