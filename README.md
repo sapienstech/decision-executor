@@ -3,10 +3,10 @@ A RESTful spring boot app to execute any decision or flow jar artifact placed in
 
 <u>**Build**</u>
 
-1. Build the project to generate required dependencies with the following "-D" properties:<br>
+1. Build the project to generate required dependencies:<br>
 **mvn clean generate-resources**
 <br><br>
-After this build the exported input artifact jar is installed into Maven's local repository (located by default in the \<user directory\>/.m2) under the path "com.sapiens.bdms.\<artifact.name\>".
+After this build the "exe helper" jar is installed into Maven's local repository (located by default in the \<user directory\>/.m2)
  
 2. Build the project to generate the standalone Spring Boot application:<br>
 **mvn clean install**
