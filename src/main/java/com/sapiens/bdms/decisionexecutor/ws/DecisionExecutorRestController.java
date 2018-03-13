@@ -69,7 +69,7 @@ public class DecisionExecutorRestController {
 	}
 
 	@RequestMapping(value = "reload/artifacts/jars/from/{path}", method = GET)
-	public String reloadArtifactsJarsFrom(@PathVariable String path, @RequestParam boolean forceReload) {
+	public String reloadArtifactsJarsFrom(@PathVariable String path, @RequestParam(defaultValue = "true") boolean forceReload) {
 		try {
 			int loaded = pojoArtifactsJarLoader.loadArtifactJarsFrom(path, forceReload);
 			return "Loaded " + loaded + " artifacts from " + Paths.get(path).toAbsolutePath().toString();
@@ -80,7 +80,7 @@ public class DecisionExecutorRestController {
 	}
 
 	@RequestMapping(value = "reload/artifacts/jars/from/default/path", method = GET)
-	public String reloadArtifactsJarsFromDefaultPath(@RequestParam boolean forceReload) {
+	public String reloadArtifactsJarsFromDefaultPath(@RequestParam(defaultValue = "true") boolean forceReload) {
 		try {
 			int loaded = pojoArtifactsJarLoader.loadArtifactJarsFromDefaultLocation(forceReload);
 			return "Loaded " + loaded + " artifacts from default path (\"" + Paths.get(defaultArtifactsJarLocation).toAbsolutePath().toString() + "\")";

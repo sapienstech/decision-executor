@@ -57,9 +57,9 @@ Note: The format for the date values **must be** according to what was set in th
 2. Artifacts loading:<br><br>
 2.1. GET call to **http://localhost:8080/reload/artifacts/jars/from/default/path?forceReload=?** with the "forceReload" query parameter<br>
 Will scan the artifacts jar location (set in the "artifacts.jar.location") and load new artifact jar files that were added.<br>
-Adding the query parameter "forceReload" as "true" will also load and override jar files that were already loaded into memory.<br><br>
+2.1.1. **forceReload** - Optional query parameter to determine if to load and override jar files that were already loaded into memory. Default is true.<br><br>
 2.2. GET call to **http://localhost:8080/reload/artifacts/jars/from/{path}?forceReload=?** with the "forceReload" query parameter<br>
-Same as the above, but from given path in "{path}".<br>
+Same as the above, but from a given path in "{path}".<br>
 Note that the "{path}" value must be URL encoded properly.<br><br>
 e.g:<br>
 http://localhost:8080/reload/artifacts/jars/from/%2Fpath%2Fto%2Fmy+lib?forceReload=true
