@@ -53,14 +53,14 @@
     </logger>
 
     <logger name="flow.execution" additivity="false">
-        <level value="DEBUG"/>
+        <level value="TRACE"/>
         <appender-ref ref="console"/>
         <appender-ref ref="async_file"/>
         <appender-ref ref="execution"/>
     </logger>
 
     <logger name="decision.execution" additivity="false">
-        <level value="DEBUG"/>
+        <level value="TRACE"/>
         <appender-ref ref="console"/>
         <appender-ref ref="async_file"/>
         <appender-ref ref="execution"/>

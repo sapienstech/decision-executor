@@ -105,6 +105,13 @@ public class DecisionExecutorRestController {
 		return map;
 	}
 
+	/***
+	 * Transforms the FactType objects into FlowExecutionFactResultDto,
+	 * which is basically the same except that it does not include the "parent" property
+	 * which cause jackson to fail JSON parsing
+	 * @param flowResult
+	 * @return
+	 */
 	private Map<String, Object> normalizeFlowResult(Map<String, Object> flowResult) {
 		Map<String, Object> result = Maps.newHashMap();
 
