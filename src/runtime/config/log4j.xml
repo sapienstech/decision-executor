@@ -66,5 +66,26 @@
         <appender-ref ref="execution"/>
     </logger>
 
+    <logger name="decision.execution.row" additivity="false">
+        <level value="TRACE"/>
+        <appender-ref ref="console"/>
+        <appender-ref ref="async_file"/>
+        <appender-ref ref="execution"/>
+    </logger>
+
+    <logger name="decision.facttype.init" additivity="false">
+        <level value="TRACE"/>
+        <appender-ref ref="console"/>
+        <appender-ref ref="async_file"/>
+        <appender-ref ref="execution"/>
+    </logger>
+
+    <logger name="decision.facttype.model" additivity="false">
+        <level value="TRACE"/>
+        <appender-ref ref="console"/>
+        <appender-ref ref="async_file"/>
+        <appender-ref ref="execution"/>
+    </logger>
+
 
 </log4j:configuration>

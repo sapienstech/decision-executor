@@ -24,8 +24,9 @@ After this build the "exe helper" jar is installed into Maven's local repository
 
 1. Logging: The log4j configuration is located in the "config" folder.<br>
 It comes with a default configuration of INFO level logging to the console and "logs/app.log" log file + TRACE level of the artifact execution into "logs/execution.log"<br>
-In order to have the full details of the execution logged, the execution loggers ("flow.execution" and "decision.execution") need to be set with the TRACE level in log4j.xml (this is also the default).<br>
-To have minimal execution logging set it to DEBUG.
+In order to have the full details of the execution logged, the execution loggers log level in log4j.xml can be changed accordingly.<br>
+The available execution loggers are: "flow.execution", "decision.execution", "decision.execution.row", "decision.facttype.init", "decision.facttype.model".<br>
+The default is maximum details of execution with each logger set with TRACE
 
 2. Custom properties: In the config, the file "application.properties" can be set with any properties below to override defaults.<br>
 2.1. **artifacts.jar.location** - The main location from which the application loads and re-loads the decisions/flows artifacts jars. The default is \<release folder full path\>/lib.<br>

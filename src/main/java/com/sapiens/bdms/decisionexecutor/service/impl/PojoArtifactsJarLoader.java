@@ -47,14 +47,18 @@ public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 	@Override
 	public int loadArtifactJarsFromDefaultLocation(boolean reloadIfAlreadyLoaded) throws MissingFileException {
 		int loaded = loadAndSetToMap(defaultArtifactsJarLocation, reloadIfAlreadyLoaded);
-		logger.info("Loaded " + loaded + " artifact files from \"" + defaultArtifactsJarLocation + "\"");
+		if(loaded > 0 || reloadIfAlreadyLoaded){
+			logger.info("Loaded " + loaded + " artifact files from \"" + defaultArtifactsJarLocation + "\"");
+		}
 		return loaded;
 	}
 
 	@Override
 	public int loadArtifactJarsFrom(String path, boolean reloadIfAlreadyLoaded) throws MissingFileException {
 		int loaded = loadAndSetToMap(path, reloadIfAlreadyLoaded);
-		logger.info("Loaded " + loaded + " artifact files from \"" + path + "\"");
+		if(loaded > 0 || reloadIfAlreadyLoaded){
+			logger.info("Loaded " + loaded + " artifact files from \"" + path + "\"");
+		}
 		return loaded;
 	}
 
@@ -119,12 +123,14 @@ public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 			try {
 				classLoadersByJarOrClassPath.get(jarOrClassName).close();
 				classLoadersByJarOrClassPath.remove(jarOrClassName);
+				logger.info("Unloaded older artifact file: \""+ jarOrClassName + "\"");
 			} catch (IOException e) {
 				logger.error("Failed to reload existing artifacts jar \"" + jarOrClassName + "\", might currently be in use - it will not be reloaded.", e);
 				return false;
 			}
 		}
 		classLoadersByJarOrClassPath.put(jarOrClassName, classLoader);
+		logger.info("Loaded artifact/s file: \""+ jarOrClassName + "\"");
 		return true;
 	}
 

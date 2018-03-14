@@ -72,10 +72,10 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 		try {
 			clazz = pojoArtifactsJarLoader.getArtifactClass(decisionClasspath);
 		} catch (ClassNotFoundException e) {
-			throw new ClassNotFoundException(String.format("Class for decision of conclusion \"%s\", view \"%s\" and version \"%s\" not found.\n" +
+			throw new ClassNotFoundException(String.format("Class for decision of conclusion \"%s\", view \"%s\" and version \"%s\" on package \"%s\" not found.\n" +
 																   "Make sure the above is accurate and the artifact jar/s located in the configured artifacts jar location (%s by default), \n" +
 																   "as described in %s",
-														   conclusionName, view, version, getDefaultArtifactsJarLocation(), README_URL));
+														   conclusionName, view, version, packagePrefix, getDefaultArtifactsJarLocation(), README_URL));
 		}
 		Decision decision = (Decision) clazz.newInstance();
 		setFactInputs(factValueByNameInputs, clazz, decision, decision.getName());
@@ -92,10 +92,10 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 		try {
 			clazz = pojoArtifactsJarLoader.getArtifactClass(flowClasspath);
 		} catch (ClassNotFoundException e) {
-			throw new ClassNotFoundException(String.format("Class for flow \"%s\" and version \"%s\" not found.\n" +
+			throw new ClassNotFoundException(String.format("Class for flow \"%s\" and version \"%s\" on package \"%s\" not found.\n" +
 																   "Make sure the above is accurate and the artifact jar/s located in the configured artifacts jar location (%s by default), \n" +
 																   "as described in %s",
-														   flowName, version, getDefaultArtifactsJarLocation(), README_URL));
+														   flowName, version, packagePrefix, getDefaultArtifactsJarLocation(), README_URL));
 		}
 		Flow flow = (Flow) clazz.newInstance();
 		setFactInputs(factValueByNameInputs, clazz, flow, flow.getName());
@@ -137,7 +137,7 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 			);
 			Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), artifactClass);
 
-			String normalizeToFactFieldName = normalizeToCamelCase(ftName, false);
+			String normalizeToFactFieldName = normalizeToCamelCase(ftName, true);
 			parsedInputsByFactToSet.put(normalizeToFactFieldName, parsedValue);
 		});
 
