@@ -18,13 +18,7 @@ import java.math.BigDecimal;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.sapiens.bdms.decisionexecutor.GeneralConstants.README_URL;
 
@@ -80,7 +74,11 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 		Decision decision = (Decision) clazz.newInstance();
 		setFactInputs(factValueByNameInputs, clazz, decision, decision.getName());
 
-		return decision.execute();
+		final Object conclusion = decision.execute();
+		Map<String, Object> conclusionWithMessages = new HashMap<>();
+		conclusionWithMessages.put("conclusion", conclusion);
+		conclusionWithMessages.put("messages", decision.getConclusionMessagesCollection());
+		return conclusionWithMessages;
 	}
 
 	@Override
