@@ -110,7 +110,8 @@ public class DecisionExecutorRestController {
 	/***
 	 * Transforms the FactType objects into FlowExecutionFactResultDto,
 	 * which is basically the same except that it does not include the "parent" property
-	 * which cause jackson to fail JSON parsing
+	 * which cause jackson to fail JSON parsing.
+	 * Another change - removes empty fact type results
 	 * @param flowResult
 	 * @return
 	 */
@@ -119,7 +120,9 @@ public class DecisionExecutorRestController {
 
 		flowResult.forEach((key, val) -> {
 			FlowExecutionFactResultDto dto = new FlowExecutionFactResultDto((FactType) val);
-			result.put(key, dto);
+			if(dto.getValue() != null){
+				result.put(key, dto);
+			}
 		});
 
 		return result;
