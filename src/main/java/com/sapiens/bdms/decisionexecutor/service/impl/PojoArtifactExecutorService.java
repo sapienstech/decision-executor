@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -80,7 +81,11 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 		Decision decision = (Decision) clazz.newInstance();
 		setFactInputs(factValueByNameInputs, clazz, decision, decision.getName());
 
-		return decision.execute();
+		final Object conclusion = decision.execute();
+		Map<String, Object> conclusionWithMessages = new HashMap<>();
+		conclusionWithMessages.put("conclusion", conclusion);
+		conclusionWithMessages.put("messages", decision.getConclusionMessagesCollection());
+		return conclusionWithMessages;
 	}
 
 	@Override
@@ -127,21 +132,27 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 		assertFactNames(factValueByNameInputs.keySet(), artifactInstance, artifactName);
 		Map<String, Object> parsedInputsByFactToSet = Maps.newHashMap();
 
-		factValueByNameInputs.forEach((ftName, ftValue) -> {
+		for (String ftName : factValueByNameInputs.keySet()) {
+			Object ftValue = factValueByNameInputs.get(ftName);
+
 			String normalizeToFactNameInMethod = normalizeToCamelCase(ftName, true);
 
-			Method ftGetter = Arrays.stream(artifactClass.getDeclaredMethods()).filter(
-					method -> method.getName().startsWith("get" + normalizeToFactNameInMethod)
-			).findFirst().orElseThrow(
-					() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactNameInMethod)
-			);
+			Method ftGetter = resolveGetter(artifactClass, normalizeToFactNameInMethod);
 			Object parsedValue = getParsedValue(ftName, ftValue, ftGetter.getReturnType(), artifactClass);
 
 			String normalizeToFactFieldName = normalizeToCamelCase(ftName, true);
 			parsedInputsByFactToSet.put(normalizeToFactFieldName, parsedValue);
-		});
+		}
 
 		artifactInstance.setFactTypes(parsedInputsByFactToSet);
+	}
+
+	private Method resolveGetter(Class artifactClass, String normalizeToFactNameInMethod) {
+		return Arrays.stream(artifactClass.getDeclaredMethods()).filter(
+				method -> method.getName().equals("get" + normalizeToFactNameInMethod)
+		).findFirst().orElseThrow(
+				() -> new RuntimeException("Could not find getter method for fact field name " + normalizeToFactNameInMethod)
+		);
 	}
 
 	private Object getParsedValue(String ftName, Object ftValue, Class<?> returnType, Class artifactClass) {
@@ -242,7 +253,7 @@ public class PojoArtifactExecutorService implements ArtifactExecutorService {
 	}
 
 	private void assertFactNames(Set<String> givenFactNames, Group artifactInstance, String artifactName) {
-		Set<String> actualNames = artifactInstance.getFactTypes().keySet();
+		Set<String> actualNames = artifactInstance.getFactTypesRecursively().values().iterator().next().keySet();
 
 		for (String givenFactName : givenFactNames) {
 
