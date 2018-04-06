@@ -20,17 +20,23 @@ import java.util.Map;
 @Service
 public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 
-	private final Map<String, URLClassLoader> classLoadersByJarOrClassPath = Maps.newHashMap();
+	private final Map<String, URLClassLoader> classLoadersByJarPath = Maps.newHashMap();
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@Value("${artifacts.jar.location}")
 	private String defaultArtifactsJarLocation;
 
+	/***
+	 * Tries to load the class according to given classpath by iterating all existing Jars class loaders
+	 * @param fullClassName full classpath to the required class
+	 * @return The class found
+	 * @throws ClassNotFoundException if no class was found in any of the class loaders
+	 */
 	@Override
 	public Class getArtifactClass(String fullClassName) throws ClassNotFoundException {
 		Class found = null;
-		for (URLClassLoader classLoader : classLoadersByJarOrClassPath.values()) {
+		for (URLClassLoader classLoader : classLoadersByJarPath.values()) {
 			try {
 				found = Class.forName(fullClassName, true, classLoader);
 			} catch (ClassNotFoundException e) {
@@ -44,15 +50,24 @@ public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 		}
 	}
 
+	/***
+	 * Calls "loadArtifactJarsFrom" with the configured default jars location
+	 * @param reloadIfAlreadyLoaded
+	 * @return
+	 * @throws MissingFileException
+	 */
 	@Override
 	public int loadArtifactJarsFromDefaultLocation(boolean reloadIfAlreadyLoaded) throws MissingFileException {
-		int loaded = loadAndSetToMap(defaultArtifactsJarLocation, reloadIfAlreadyLoaded);
-		if(loaded > 0 || reloadIfAlreadyLoaded){
-			logger.info("Loaded " + loaded + " artifact files from \"" + defaultArtifactsJarLocation + "\"");
-		}
-		return loaded;
+		return loadArtifactJarsFrom(defaultArtifactsJarLocation, reloadIfAlreadyLoaded);
 	}
 
+	/***
+	 * Loads all Jar files found in given path
+	 * @param path Path to load Jars from
+	 * @param reloadIfAlreadyLoaded Reload even if Jar already loaded before
+	 * @return Number of Jars loaded
+	 * @throws MissingFileException if no Jar was found in given path
+	 */
 	@Override
 	public int loadArtifactJarsFrom(String path, boolean reloadIfAlreadyLoaded) throws MissingFileException {
 		int loaded = loadAndSetToMap(path, reloadIfAlreadyLoaded);
@@ -64,12 +79,15 @@ public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 
 	@Override
 	public boolean isClassLoadersEmpty() {
-		return classLoadersByJarOrClassPath.isEmpty();
+		return classLoadersByJarPath.isEmpty();
 	}
 
+	/***
+	 * Loads all Jars found in given path into a map by jar name
+	 */
 	private int loadAndSetToMap(String pathString,
 								boolean reloadIfAlreadyLoaded) throws MissingFileException {
-		synchronized (classLoadersByJarOrClassPath) {
+		synchronized (classLoadersByJarPath) {
 			Path path = Paths.get(pathString);
 			File file = path.toFile();
 
@@ -85,9 +103,13 @@ public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 				(file.exists() && file.isDirectory() && file.list().length == 0);
 	}
 
+	/***
+	 * Saves a reference to all Jars found in given path and all sub-paths within it in a map by jar name
+	 * @return Number of Jars loaded
+	 */
 	private int recursivelyLoadAndSetToMap(Path path, boolean reloadIfAlreadyLoaded) {
 		if (path.toFile().isFile()) {
-			return loadAndSetToMap(path, reloadIfAlreadyLoaded) ? 1 : 0;
+			return loadAndSetToMapSingleJar(path, reloadIfAlreadyLoaded) ? 1 : 0;
 		}
 		int count = 0;
 		//is a dir
@@ -97,49 +119,50 @@ public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
 		return count;
 	}
 
-	private boolean loadAndSetToMap(Path jarOrClassPath, boolean reloadIfAlreadyLoaded) {
-		String jarOrClassName = jarOrClassPath.toAbsolutePath().toString();
-		boolean isAlreadyLoaded = classLoadersByJarOrClassPath.containsKey(jarOrClassName);
+	/***
+	 * Loads a single jar reference into a URLClassLoader and saves it into a map by the jar full path
+	 * @return true if loaded, false otherwise
+	 */
+	private boolean loadAndSetToMapSingleJar(Path jarPath, boolean reloadIfAlreadyLoaded) {
+		String jarName = jarPath.toAbsolutePath().toString();
+		boolean isAlreadyLoaded = classLoadersByJarPath.containsKey(jarName);
 
 		if (!reloadIfAlreadyLoaded && isAlreadyLoaded) {
 			return false;
 		}
 
-		if (!isAJarOrClassFile(jarOrClassPath)) {
-			logger.warn("Could not load file \"" + jarOrClassName + "\" located in the artifacts folder since it is not a " +
+		if (!isAJarFile(jarPath)) {
+			logger.warn("Could not load file \"" + jarName + "\" located in the artifacts folder since it is not a " +
 								"jar or class file (does not have the a compatible extension)");
 			return false;
 		}
 
 		URLClassLoader classLoader;
 		try {
-			classLoader = new URLClassLoader(new URL[]{jarOrClassPath.toUri().toURL()}, this.getClass().getClassLoader());
+			classLoader = new URLClassLoader(new URL[]{jarPath.toUri().toURL()}, this.getClass().getClassLoader());
 		} catch (MalformedURLException e) {
-			logger.error("Failed to load artifacts jar \"" + jarOrClassName + "\": " + e.getMessage());
+			logger.error("Failed to load artifacts jar \"" + jarName + "\": " + e.getMessage());
 			return false;
 		}
 
 		if (isAlreadyLoaded) {
 			try {
-				classLoadersByJarOrClassPath.get(jarOrClassName).close();
-				classLoadersByJarOrClassPath.remove(jarOrClassName);
-				logger.info("Unloaded older artifact file: \""+ jarOrClassName + "\"");
+				classLoadersByJarPath.get(jarName).close();
+				classLoadersByJarPath.remove(jarName);
+				logger.info("Unloaded older artifact file: \""+ jarName + "\"");
 			} catch (IOException e) {
-				logger.error("Failed to reload existing artifacts jar \"" + jarOrClassName + "\", might currently be in use - it will not be reloaded.", e);
+				logger.error("Failed to reload existing artifacts jar \"" + jarName + "\", might currently be in use - it will not be reloaded.", e);
 				return false;
 			}
 		}
-		classLoadersByJarOrClassPath.put(jarOrClassName, classLoader);
-		logger.info("Loaded artifact/s file: \""+ jarOrClassName + "\"");
+		classLoadersByJarPath.put(jarName, classLoader);
+		logger.info("Loaded artifact/s file: \""+ jarName + "\"");
 		return true;
 	}
 
-	private boolean isAJarOrClassFile(Path jarOrClassPath) {
-		String jarOrClassFileName = jarOrClassPath.toAbsolutePath().toString();
-		return jarOrClassFileName.endsWith(".jar") ||
-				jarOrClassFileName.endsWith(".JAR") ||
-				jarOrClassFileName.endsWith(".class") ||
-				jarOrClassFileName.endsWith(".CLASS");
+	private boolean isAJarFile(Path jarPath) {
+		String jarFileName = jarPath.toAbsolutePath().toString();
+		return jarFileName.endsWith(".jar") || jarFileName.endsWith(".JAR");
 	}
 
 	private String toFullPath(String path) {

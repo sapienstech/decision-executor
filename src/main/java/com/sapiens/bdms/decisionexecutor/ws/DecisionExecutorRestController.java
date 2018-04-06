@@ -1,6 +1,5 @@
 package com.sapiens.bdms.decisionexecutor.ws;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.sapiens.bdms.decisionexecutor.service.face.ArtifactExecutorService;
 import com.sapiens.bdms.decisionexecutor.service.face.ArtifactsJarLoader;
@@ -16,10 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -39,6 +36,16 @@ public class DecisionExecutorRestController {
 	@Value("${artifacts.jar.location}")
 	private String defaultArtifactsJarLocation;
 
+	/***
+	 * Execute a Decision View according to given parameters and return result with messages
+	 * @param conclusionName The decision conclusion
+	 * @param packagePrefix The Java package prefix as was set to the "Generated Package Prefix" property in the
+	 *                      DM Java Adapter with which this Decision class was exported
+	 * @param view The Decision's View
+	 * @param version The Decision's version
+	 * @param factValueByNameInputs The Map of the execution input values by their Fact Type name
+	 * @return Execution result as map of values by Fact Type Name and messages
+	 */
 	@RequestMapping(value = "/execute/decision/{packagePrefix}/{conclusionName}/{view}/{version}", method = POST)
 	public Object executeDecision(@PathVariable String conclusionName,
 								  @PathVariable String packagePrefix,
@@ -53,6 +60,14 @@ public class DecisionExecutorRestController {
 		}
 	}
 
+	/***
+	 * Execute a Flow according to given parameters and return result with messages
+	 * @param packagePrefix The Java package prefix as was set to the "Generated Package Prefix" property in the
+	 *                      DM Java Adapter with which this Decision class was exported
+	 * @param version The Flow's version
+	 * @param factValueByNameInputs The Map of the execution input values by their Fact Type name
+	 * @return Execution result as map of execution result with row hits and messages by Fact Type Name
+	 */
 	@RequestMapping(value = "/execute/flow/{packagePrefix}/{flowName}/{version}", method = POST)
 	public Map<String, Object> executeFlow(@PathVariable String flowName,
 										   @PathVariable String packagePrefix,
@@ -70,6 +85,14 @@ public class DecisionExecutorRestController {
 		}
 	}
 
+	/***
+	 * Scans the artifacts jar in given location and re-loads the execution artifacts to memory.
+	 * Will update existing artifacts unless specified otherwise in the "forceReload" parameter
+	 * @param path Custom location to reload the jars
+	 * @param forceReload Optional query parameter to determine if to load and override jar files that were already loaded into memory.
+	 *                    Default is true.
+	 * @return Action result string.
+	 */
 	@RequestMapping(value = "reload/artifacts/jars/from/{path}", method = GET)
 	public String reloadArtifactsJarsFrom(@PathVariable String path, @RequestParam(defaultValue = "true") boolean forceReload) {
 		try {
@@ -81,6 +104,13 @@ public class DecisionExecutorRestController {
 		}
 	}
 
+	/***
+	 * Scans the artifacts jar default location and re-loads the execution artifacts to memory.
+	 * Will update existing artifacts unless specified otherwise in the "forceReload" parameter
+	 * @param forceReload Optional query parameter to determine if to load and override jar files that were already loaded into memory.
+	 *                    Default is true.
+	 * @return Action result string.
+	 */
 	@RequestMapping(value = "reload/artifacts/jars/from/default/path", method = GET)
 	public String reloadArtifactsJarsFromDefaultPath(@RequestParam(defaultValue = "true") boolean forceReload) {
 		try {
@@ -90,21 +120,6 @@ public class DecisionExecutorRestController {
 			logger.error(e.getMessage(), e);
 			return "Error: " + e.getMessage();
 		}
-	}
-
-	@RequestMapping("/rest/test")
-	public Map<String, Object> restTest() {
-		logger.info("in restTest");
-
-		HashMap<String, Object> map = new HashMap<>();
-		map.put("string", "val1");
-		map.put("int", 1);
-		map.put("dbl", new Double("7.7"));
-		map.put("date", new Date());
-		map.put("int list", Lists.newArrayList(1, 2, 3));
-		map.put("string list", Lists.newArrayList("1", "2", "3"));
-		map.put("bd", new BigDecimal("5.333"));
-		return map;
 	}
 
 	/***
@@ -120,12 +135,27 @@ public class DecisionExecutorRestController {
 
 		flowResult.forEach((key, val) -> {
 			FlowExecutionFactResultDto dto = new FlowExecutionFactResultDto((FactType) val);
-			if(dto.getValue() != null){
+			if(hasAValue(dto)){
 				result.put(key, dto);
 			}
 		});
 
 		return result;
+	}
+
+	private boolean hasAValue(FlowExecutionFactResultDto dto) {
+		Object value = dto.getValue();
+		return value != null &&
+				isNotEmptyString(value) &&
+				isNotEmptyCollection(value);
+	}
+
+	private boolean isNotEmptyString(Object value){
+		return !(value.getClass().isAssignableFrom(String.class) && ((String) value).isEmpty());
+	}
+
+	private boolean isNotEmptyCollection(Object value){
+		return !(Collection.class.isAssignableFrom(value.getClass()) && ((Collection) value).isEmpty());
 	}
 
 }

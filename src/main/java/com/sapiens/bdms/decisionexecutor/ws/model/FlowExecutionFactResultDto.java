@@ -6,6 +6,9 @@ import com.sapiens.bdms.java.exe.helper.base.RowHit;
 import java.util.List;
 import java.util.Map;
 
+/***
+ * Flow execution result wrapper to return as the web response
+ */
 public class FlowExecutionFactResultDto {
 	private Object value;
 	private Map<String, List<RowHit>> rowHits;
