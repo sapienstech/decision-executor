@@ -2,7 +2,7 @@ package com.sapiens.bdms.decisionexecutor.service.impl;
 
 import com.google.common.collect.Maps;
 import com.sapiens.bdms.decisionexecutor.exception.MissingFileException;
-import com.sapiens.bdms.decisionexecutor.service.face.ArtifactsJarLoader;
+import com.sapiens.bdms.decisionexecutor.service.face.ArtifactsJarLoaderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 @Service
-public class PojoArtifactsJarLoader implements ArtifactsJarLoader {
+public class PojoArtifactsJarLoaderService implements ArtifactsJarLoaderService {
 
 	private final Map<String, URLClassLoader> classLoadersByJarPath = Maps.newHashMap();
 

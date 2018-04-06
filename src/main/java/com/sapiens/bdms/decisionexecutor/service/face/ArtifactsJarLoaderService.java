@@ -2,7 +2,7 @@ package com.sapiens.bdms.decisionexecutor.service.face;
 
 import com.sapiens.bdms.decisionexecutor.exception.MissingFileException;
 
-public interface ArtifactsJarLoader {
+public interface ArtifactsJarLoaderService {
 	/***
 	 * Tries to load the class according to given classpath by iterating all existing Jars class loaders
 	 * @param fullClassName full classpath to the required class

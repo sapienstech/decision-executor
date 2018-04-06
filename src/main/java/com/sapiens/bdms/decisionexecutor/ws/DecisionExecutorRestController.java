@@ -2,7 +2,7 @@ package com.sapiens.bdms.decisionexecutor.ws;
 
 import com.google.common.collect.Maps;
 import com.sapiens.bdms.decisionexecutor.service.face.ArtifactExecutorService;
-import com.sapiens.bdms.decisionexecutor.service.face.ArtifactsJarLoader;
+import com.sapiens.bdms.decisionexecutor.service.face.ArtifactsJarLoaderService;
 import com.sapiens.bdms.decisionexecutor.ws.model.FlowExecutionFactResultDto;
 import com.sapiens.bdms.java.exe.helper.base.FactType;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class DecisionExecutorRestController {
 	private ArtifactExecutorService pojoArtifactExecutorService;
 
 	@Resource
-	private ArtifactsJarLoader pojoArtifactsJarLoader;
+	private ArtifactsJarLoaderService pojoArtifactsJarLoaderService;
 
 	@Value("${artifacts.jar.location}")
 	private String defaultArtifactsJarLocation;
@@ -96,7 +96,7 @@ public class DecisionExecutorRestController {
 	@RequestMapping(value = "reload/artifacts/jars/from/{path}", method = GET)
 	public String reloadArtifactsJarsFrom(@PathVariable String path, @RequestParam(defaultValue = "true") boolean forceReload) {
 		try {
-			int loaded = pojoArtifactsJarLoader.loadArtifactJarsFrom(path, forceReload);
+			int loaded = pojoArtifactsJarLoaderService.loadArtifactJarsFrom(path, forceReload);
 			return "Loaded " + loaded + " artifacts from " + Paths.get(path).toAbsolutePath().toString();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
@@ -114,7 +114,7 @@ public class DecisionExecutorRestController {
 	@RequestMapping(value = "reload/artifacts/jars/from/default/path", method = GET)
 	public String reloadArtifactsJarsFromDefaultPath(@RequestParam(defaultValue = "true") boolean forceReload) {
 		try {
-			int loaded = pojoArtifactsJarLoader.loadArtifactJarsFromDefaultLocation(forceReload);
+			int loaded = pojoArtifactsJarLoaderService.loadArtifactJarsFromDefaultLocation(forceReload);
 			return "Loaded " + loaded + " artifacts from default path (\"" + Paths.get(defaultArtifactsJarLocation).toAbsolutePath().toString() + "\")";
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
